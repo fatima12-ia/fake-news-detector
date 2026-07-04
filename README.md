@@ -43,7 +43,15 @@ A Machine Learning web application that classifies news articles as **Real or Fa
 
 
 ##  Screenshots
-output screenshots
+
+### Home Page
+![Home](home.png)
+
+### Prediction Result
+![Result](result.png)
+
+### File Upload
+![Upload](upload.png)
 
 
 

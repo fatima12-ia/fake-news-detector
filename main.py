@@ -1,5 +1,30 @@
 import streamlit as st
 import pickle
+import requests
+
+# Function to fetch news
+
+def get_news():
+    api_key = "78326fa41af5495da68800dbb2f67d95"
+    url = f"https://newsapi.org/v2/everything?q=india&sortBy=publishedAt&apiKey={api_key}"
+    
+    response = requests.get(url)
+    data = response.json()
+    
+    # DEBUG PRINT
+    print(data)
+
+    if data["status"] != "ok":
+        return ["Error fetching news: " + data.get("message", "Unknown error")]
+
+    articles = data["articles"]
+    headlines = [article["title"] for article in articles if article["title"]]
+
+    return headlines
+
+# Load model
+model = pickle.load(open("model.pkl", "rb"))
+vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
 
 # Page config
 st.set_page_config(page_title="Fake News Detector", page_icon="📰", layout="centered")
@@ -21,9 +46,35 @@ st.markdown("""
 st.title(" Fake News Detection App")
 st.caption("Check whether a news article is real or fake using Machine Learning")
 
-# Load model
-model = pickle.load(open("model.pkl", "rb"))
-vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
+# REAL-TIME NEWS SECTION
+st.subheader(" Latest News (Real-Time)")
+
+# Store news in session
+if "news_list" not in st.session_state:
+    st.session_state.news_list = []
+
+# Load news
+if st.button(" Load Latest News"):
+    st.session_state.news_list = get_news()
+
+# Show news if available
+if st.session_state.news_list:
+   for i, news in enumerate(st.session_state.news_list[:5]):
+    st.write(f"###  {news}")
+
+    vector = vectorizer.transform([news])
+    prediction = model.predict(vector)
+    prob = model.predict_proba(vector)
+
+    confidence = max(prob[0]) * 100
+
+    if prediction[0] == 1:
+        st.success(f" REAL News ({confidence:.2f}%)")
+    else:
+        st.error(f" FAKE News ({confidence:.2f}%)")
+
+    st.markdown("---")
+
 
 # OPTION 1 — Manual input
 st.subheader(" Enter News Manually")
@@ -63,6 +114,7 @@ if st.button(" Analyze News"):
             st.success(f" REAL News\nConfidence: {confidence:.2f}%")
         else:
             st.error(f" FAKE News\nConfidence: {confidence:.2f}%")
+        
 
 # Sidebar
 st.sidebar.title(" About")
